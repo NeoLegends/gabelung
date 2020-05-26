@@ -8,6 +8,7 @@ categories = ["asynchronous", "concurrency"]
 description = "Branch an asynchronous stream of cloneable items into two."
 keywords = ["branch", "fork", "stream", "futures"]
 license = "MIT"
+readme = "README.md"
 repository = "https://github.com/NeoLegends/gabelung"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
