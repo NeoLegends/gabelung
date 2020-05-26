@@ -233,6 +233,9 @@ where
     }
 }
 
+// The stream itself is behind the Arc, so it won't move if the branch is moved
+impl<S, I> Unpin for Branch<S, I> {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
