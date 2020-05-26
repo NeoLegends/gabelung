@@ -13,9 +13,8 @@
 //! # #[tokio::main]
 //! # async fn main() {
 //! use futures::{stream, prelude::*};
-//! use gabelung::Branch;
 //!
-//! let (mut left, mut right) = Branch::new(stream::repeat(1u8));
+//! let (mut left, mut right) = gabelung::new(stream::repeat(1u8));
 //!
 //! assert_eq!(left.next().await, Some(1u8));
 //! assert_eq!(right.next().await, Some(1u8));
@@ -55,25 +54,23 @@ enum Direction {
     Right,
 }
 
-impl<S: Stream> Branch<S, S::Item> {
-    pub fn new(stream: S) -> (Self, Self) {
-        let inner = Arc::new(Mutex::new(BranchInner {
-            left: None,
-            right: None,
-            stream,
-        }));
+pub fn new<S: Stream>(stream: S) -> (Branch<S, S::Item>, Branch<S, S::Item>) {
+    let inner = Arc::new(Mutex::new(BranchInner {
+        left: None,
+        right: None,
+        stream,
+    }));
 
-        let left = Branch {
-            direction: Direction::Left,
-            inner: inner.clone(),
-        };
-        let right = Branch {
-            direction: Direction::Right,
-            inner: inner,
-        };
+    let left = Branch {
+        direction: Direction::Left,
+        inner: inner.clone(),
+    };
+    let right = Branch {
+        direction: Direction::Right,
+        inner: inner,
+    };
 
-        (left, right)
-    }
+    (left, right)
 }
 
 impl<S, I> Drop for Branch<S, I> {
@@ -214,7 +211,7 @@ mod tests {
         Branch<stream::Repeat<u8>, u8>,
     ) {
         let base = stream::repeat(0u8);
-        Branch::new(base)
+        crate::new(base)
     }
 
     pub fn drop_one_half(cx: &mut Context<'_>) -> Poll<()> {
