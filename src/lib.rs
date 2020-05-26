@@ -4,7 +4,7 @@
 //! As long as both branches are alive, one can never outpace the other by more than
 //! a fixed number of items.
 //!
-//! This library is runtime agnostic. Nonetheless it is tested on both `async_std`
+//! This library is runtime agnostic. It is verified to work on both `async_std`
 //! and `tokio`.
 //!
 //! # Example
@@ -32,18 +32,18 @@ use std::{
 #[derive(Debug)]
 pub struct Branch<S, I> {
     direction: Direction,
-    inner: Arc<Mutex<BranchInner<S, I>>>,
+    inner: Arc<Mutex<Inner<S, I>>>,
 }
 
 #[derive(Debug)]
-struct BranchInner<S, I> {
-    left: Option<BranchState<I>>,
-    right: Option<BranchState<I>>,
+struct Inner<S, I> {
+    left: Option<State<I>>,
+    right: Option<State<I>>,
     stream: S,
 }
 
 #[derive(Debug)]
-enum BranchState<I> {
+enum State<I> {
     Live(Option<I>, Option<Waker>),
     Dropped,
 }
@@ -55,7 +55,7 @@ enum Direction {
 }
 
 pub fn new<S: Stream>(stream: S) -> (Branch<S, S::Item>, Branch<S, S::Item>) {
-    let inner = Arc::new(Mutex::new(BranchInner {
+    let inner = Arc::new(Mutex::new(Inner {
         left: None,
         right: None,
         stream,
@@ -76,14 +76,14 @@ pub fn new<S: Stream>(stream: S) -> (Branch<S, S::Item>, Branch<S, S::Item>) {
 impl<S, I> Drop for Branch<S, I> {
     fn drop(&mut self) {
         let mut inner = self.inner.lock();
-        let BranchInner { left, right, .. } = &mut *inner;
+        let Inner { left, right, .. } = &mut *inner;
 
         let (own_state, other_state) = match self.direction {
             Direction::Left => (left, right),
             Direction::Right => (right, left),
         };
 
-        *own_state = Some(BranchState::Dropped);
+        *own_state = Some(State::Dropped);
 
         // Wake up the other half to hand off the responsibility for polling.
         //
@@ -91,7 +91,7 @@ impl<S, I> Drop for Branch<S, I> {
         // Poll::Pending, the other half is waiting for us to wake to take the next
         // action. If we're being dropped though, no further action will be taken
         // and the other half needs to be notified about that.
-        if let Some(BranchState::Live(_, Some(waker))) = other_state {
+        if let Some(State::Live(_, Some(waker))) = other_state {
             waker.wake_by_ref();
         }
     }
@@ -109,7 +109,7 @@ where
         cx: &mut Context,
     ) -> Poll<Option<Self::Item>> {
         let mut inner = self.inner.lock();
-        let BranchInner {
+        let Inner {
             left,
             right,
             stream,
@@ -126,30 +126,30 @@ where
 
         loop {
             match own_state.take() {
-                Some(BranchState::Live(Some(it), Some(waker))) => {
-                    *own_state = Some(BranchState::Live(None, Some(waker)));
+                Some(State::Live(Some(it), Some(waker))) => {
+                    *own_state = Some(State::Live(None, Some(waker)));
 
                     // Wake up other branch since we have progressed and it's free
                     // to move further now.
-                    if let Some(BranchState::Live(_, Some(w))) = &*other_state {
+                    if let Some(State::Live(_, Some(w))) = &*other_state {
                         w.wake_by_ref();
                     }
 
                     return Poll::Ready(Some(it));
                 }
-                Some(BranchState::Live(None, Some(waker))) => {
-                    *own_state = Some(BranchState::Live(None, Some(waker)));
+                Some(State::Live(None, Some(waker))) => {
+                    *own_state = Some(State::Live(None, Some(waker)));
 
                     // Other branch still has to consume its item, wait for that to
                     // happen until progressing any further
-                    if let Some(BranchState::Live(Some(_), _)) = &*other_state {
+                    if let Some(State::Live(Some(_), _)) = &*other_state {
                         return Poll::Pending;
                     }
 
                     match ready!(stream.poll_next(cx)) {
                         Some(it) => {
                             match other_state {
-                                Some(BranchState::Live(item @ None, waker)) => {
+                                Some(State::Live(item @ None, waker)) => {
                                     *item = Some(it.clone());
 
                                     // Wake the other half up, if possible. If the
@@ -160,13 +160,13 @@ where
                                         w.wake_by_ref();
                                     }
                                 }
-                                Some(BranchState::Live(Some(_), _)) => {
+                                Some(State::Live(Some(_), _)) => {
                                     // checked for above before polling stream
                                     unreachable!()
                                 }
-                                Some(BranchState::Dropped) => {}
+                                Some(State::Dropped) => {}
                                 None => {
-                                    *other_state = Some(BranchState::Live(
+                                    *other_state = Some(State::Live(
                                         Some(it.clone()),
                                         None,
                                     ))
@@ -180,15 +180,15 @@ where
                         }
                     }
                 }
-                Some(BranchState::Live(item, None)) => {
+                Some(State::Live(item, None)) => {
                     *own_state =
-                        Some(BranchState::Live(item, Some(cx.waker().clone())));
+                        Some(State::Live(item, Some(cx.waker().clone())));
                 }
                 None => {
                     *own_state =
-                        Some(BranchState::Live(None, Some(cx.waker().clone())));
+                        Some(State::Live(None, Some(cx.waker().clone())));
                 }
-                Some(BranchState::Dropped) => {
+                Some(State::Dropped) => {
                     unreachable!("poll on dropped branch half");
                 }
             }
