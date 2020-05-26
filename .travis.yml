@@ -3,3 +3,7 @@ rust:
   - stable
   - nightly
   - 1.39.0
+
+jobs:
+  allow_failures:
+    - rust: nightly
