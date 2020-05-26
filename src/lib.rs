@@ -173,7 +173,8 @@ where
                     *own_state = Some(State::Live(None, Some(waker)));
 
                     // Other branch still has to consume its item, wait for that to
-                    // happen until progressing any further
+                    // happen until progressing any further. The other branch will
+                    // wake us up.
                     if let Some(State::Live(Some(_), _)) = &*other_state {
                         return Poll::Pending;
                     }
