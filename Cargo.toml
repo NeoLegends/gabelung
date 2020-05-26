@@ -1,0 +1,22 @@
+[package]
+name = "gabelung"
+version = "0.1.0"
+authors = ["Moritz Gunz <moritz.gunz@gmail.com>"]
+edition = "2018"
+
+categories = ["asynchronous", "concurrency"]
+description = "Branch an asynchronous stream of cloneable items into two."
+keywords = ["branch", "fork", "stream", "futures"]
+license = "MIT"
+repository = "https://github.com/NeoLegends/gabelung"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+futures-util = "0.3.5"
+parking_lot = "0.10.2"
+
+[dev-dependencies]
+async-std = { version = "1.6.0", features = ["attributes"] }
+futures = "0.3.5"
+tokio = { version = "0.2.21", features = ["macros", "rt-threaded"] }
