@@ -29,6 +29,7 @@ use std::{
     task::{Context, Poll, Waker},
 };
 
+#[must_use = "streams do nothing unless polled"]
 #[derive(Debug)]
 pub struct Branch<S, I> {
     direction: Direction,
