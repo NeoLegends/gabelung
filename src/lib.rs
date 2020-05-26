@@ -147,8 +147,8 @@ where
             stream,
         } = &mut *inner;
 
-        // SAFETY: This may or may not be safe. I think it's safe but I honestly
-        // don't know. Since the stream is behind Arc<Mutex> I think it will never
+        // SAFETY: From my limited understanding this should be safe. The code never
+        // moves the stream, and since it is behind Arc<Mutex> it should also never
         // move on its own.
         let stream = unsafe { Pin::new_unchecked(stream) };
         let (own_state, other_state) = match self.direction {
