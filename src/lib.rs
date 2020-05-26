@@ -241,7 +241,7 @@ mod tests {
     use super::*;
     use futures::prelude::*;
 
-    pub fn get_stream() -> (
+    fn get_stream() -> (
         Branch<stream::Repeat<u8>, u8>,
         Branch<stream::Repeat<u8>, u8>,
     ) {
@@ -249,7 +249,27 @@ mod tests {
         crate::new(base)
     }
 
-    pub fn drop_one_half(cx: &mut Context<'_>) -> Poll<()> {
+    fn branch_multiple(cx: &mut Context<'_>) -> Poll<()> {
+        let (left, right) = get_stream();
+        let (a_l, a_r) = crate::new(left);
+        let (b_l, b_r) = crate::new(right);
+
+        let mut a_l = Box::pin(a_l);
+        let mut a_r = Box::pin(a_r);
+        let mut b_l = Box::pin(b_l);
+        let mut b_r = Box::pin(b_r);
+
+        assert_eq!(a_l.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(a_r.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(b_l.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(b_r.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(b_r.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(b_r.as_mut().poll_next(cx), Poll::Pending);
+
+        Poll::Ready(())
+    }
+
+    fn drop_one_half(cx: &mut Context<'_>) -> Poll<()> {
         let (left, right) = get_stream();
         let mut left = Box::pin(left);
         drop(right);
@@ -263,7 +283,7 @@ mod tests {
         Poll::Ready(())
     }
 
-    pub fn lockstep(cx: &mut Context<'_>) -> Poll<()> {
+    fn lockstep(cx: &mut Context<'_>) -> Poll<()> {
         let (left, right) = get_stream();
         let mut left = Box::pin(left);
         let mut right = Box::pin(right);
@@ -280,7 +300,7 @@ mod tests {
         Poll::Ready(())
     }
 
-    pub fn waits_for_other(cx: &mut Context<'_>) -> Poll<()> {
+    fn waits_for_other(cx: &mut Context<'_>) -> Poll<()> {
         let (left, right) = get_stream();
         let mut left = Box::pin(left);
         let mut right = Box::pin(right);
@@ -301,6 +321,11 @@ mod tests {
         use futures::future;
 
         #[async_std::test]
+        async fn branch_multiple() {
+            future::poll_fn(super::branch_multiple).await;
+        }
+
+        #[async_std::test]
         async fn drop_one_half() {
             future::poll_fn(super::drop_one_half).await;
         }
@@ -318,6 +343,11 @@ mod tests {
 
     mod tk {
         use futures::future;
+
+        #[tokio::test]
+        async fn branch_multiple() {
+            future::poll_fn(super::branch_multiple).await;
+        }
 
         #[tokio::test]
         async fn drop_one_half() {
