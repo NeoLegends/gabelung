@@ -1,8 +1,10 @@
-//! Branch an asynchronous stream of cloneable items into two halfs that yield
-//! the items in lockstep.
+//! Branch an asynchronous stream into two, pushing all items to both halves.
 //!
-//! As long as both branches are alive, one can never outpace the other by more than
-//! a fixed number of items.
+//! The resulting branches will can be polled independently from each other and will
+//! receive all items from the underlying stream (which must be `Clone`).
+//!
+//! As long as both halves are alive, one half will never outpace the other by more
+//! than a fixed number of items.
 //!
 //! This library is runtime agnostic. It is verified to work on both `async_std`
 //! and `tokio`.
@@ -21,6 +23,8 @@
 //! # }
 //! ```
 
+#![deny(missing_docs)]
+
 use futures_util::{ready, stream::Stream};
 use parking_lot::Mutex;
 use std::{
@@ -29,6 +33,12 @@ use std::{
     task::{Context, Poll, Waker},
 };
 
+/// A branch of the forked stream.
+///
+/// As long as both halves are alive, one half will never outpace the other by more
+/// than a fixed number of items.
+///
+/// See [`fn new(stream)`](fn.new.html) for more information.
 #[must_use = "streams do nothing unless polled"]
 #[derive(Debug)]
 pub struct Branch<S, I> {
@@ -55,6 +65,27 @@ enum Direction {
     Right,
 }
 
+/// Branch the given stream into two.
+///
+/// This creates two handles which can be polled independently from each other and
+/// will receive all items from the underlying stream (which must be `Clone`).
+///
+/// As long as both halves are alive, one half will never outpace the other by more
+/// than a fixed number of items.
+///
+/// # Example
+///
+/// ```rust
+/// # #[tokio::main]
+/// # async fn main() {
+/// use futures::{stream, prelude::*};
+///
+/// let (mut left, mut right) = gabelung::new(stream::repeat(1u8));
+///
+/// assert_eq!(left.next().await, Some(1u8));
+/// assert_eq!(right.next().await, Some(1u8));
+/// # }
+/// ```
 pub fn new<S: Stream>(stream: S) -> (Branch<S, S::Item>, Branch<S, S::Item>) {
     let inner = Arc::new(Mutex::new(Inner {
         left: None,
