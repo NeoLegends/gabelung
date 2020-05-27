@@ -149,18 +149,18 @@ where
         // moves the stream, and since it is behind Arc<Mutex> it should also never
         // move on its own.
         let stream = unsafe { Pin::new_unchecked(stream) };
-        let (own_state, other_state) = match self.direction {
+        let (own_branch, other_branch) = match self.direction {
             Direction::Left => (left, right),
             Direction::Right => (right, left),
         };
 
-        own_state.ensure_waker(cx);
+        own_branch.ensure_waker(cx);
 
-        match own_state.take_item() {
+        match own_branch.take_item() {
             Some(it) => {
                 // Wake up other branch since we have progressed and it's free to
                 // move further now.
-                other_state.wake();
+                other_branch.wake();
 
                 return Poll::Ready(Some(it));
             }
@@ -168,13 +168,13 @@ where
                 // Other branch may still have to consume its item, wait for that to
                 // happen until progressing any further. The other branch will wake
                 // us up.
-                if other_state.has_item() {
+                if other_branch.has_item() {
                     return Poll::Pending;
                 }
 
                 match ready!(stream.poll_next(cx)) {
                     Some(it) => {
-                        other_state.put_item(&it);
+                        other_branch.put_item(&it);
                         return Poll::Ready(Some(it));
                     }
                     None => {
