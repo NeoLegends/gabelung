@@ -304,6 +304,22 @@ mod tests {
         Poll::Ready(())
     }
 
+    fn terminates(cx: &mut Context<'_>) -> Poll<()> {
+        let (left, right) = crate::new(stream::once(future::ready(())));
+
+        let mut left = Box::pin(left);
+        let mut right = Box::pin(right);
+
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(None));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(None));
+        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(None));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(None));
+
+        Poll::Ready(())
+    }
+
     fn waits_for_other(cx: &mut Context<'_>) -> Poll<()> {
         let (left, right) = get_stream();
         let mut left = Box::pin(left);
@@ -340,6 +356,11 @@ mod tests {
         }
 
         #[async_std::test]
+        async fn terminates() {
+            future::poll_fn(super::terminates).await;
+        }
+
+        #[async_std::test]
         async fn waits_for_other() {
             future::poll_fn(super::waits_for_other).await;
         }
@@ -361,6 +382,11 @@ mod tests {
         #[tokio::test]
         async fn lockstep() {
             future::poll_fn(super::lockstep).await;
+        }
+
+        #[tokio::test]
+        async fn terminates() {
+            future::poll_fn(super::terminates).await;
         }
 
         #[tokio::test]
