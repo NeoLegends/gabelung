@@ -175,6 +175,8 @@ where
                 match ready!(stream.poll_next(cx)) {
                     Some(it) => {
                         other_branch.put_item(&it);
+                        other_branch.wake();
+
                         return Poll::Ready(Some(it));
                     }
                     None => {
@@ -217,14 +219,10 @@ impl<I> State<I> {
     where
         I: Clone,
     {
-        if let State::Live(it, waker) = self {
-            assert!(it.is_none(), "overwriting gabelung item");
-
-            *it = Some(item.clone());
-
-            if let Some(w) = waker {
-                w.wake_by_ref();
-            }
+        match self {
+            State::Live(it @ None, _) => *it = Some(item.clone()),
+            State::Live(Some(_), _) => panic!("overwriting branch item"),
+            _ => {}
         }
     }
 
