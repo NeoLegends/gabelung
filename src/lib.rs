@@ -198,7 +198,7 @@ impl<I> State<I> {
                 if waker.is_none() {
                     *waker = Some(cx.waker().clone());
                 }
-            },
+            }
             State::Dropped => unreachable!("poll on dropped branch half"),
         }
     }
@@ -228,7 +228,7 @@ impl<I> State<I> {
     pub fn take_item(&mut self) -> Option<I> {
         match self {
             State::Live(it, _) => it.take(),
-            _ => None
+            _ => None,
         }
     }
 
