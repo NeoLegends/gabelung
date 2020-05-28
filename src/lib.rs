@@ -246,10 +246,10 @@ mod tests {
     use futures::prelude::*;
 
     fn get_stream() -> (
-        Branch<stream::Repeat<u8>, u8>,
-        Branch<stream::Repeat<u8>, u8>,
+        Branch<stream::Repeat<()>, ()>,
+        Branch<stream::Repeat<()>, ()>,
     ) {
-        let base = stream::repeat(0u8);
+        let base = stream::repeat(());
         crate::new(base)
     }
 
@@ -263,11 +263,11 @@ mod tests {
         let mut b_l = Box::pin(b_l);
         let mut b_r = Box::pin(b_r);
 
-        assert_eq!(a_l.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(a_r.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(b_l.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(b_r.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(b_r.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(a_l.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(a_r.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(b_l.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(b_r.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(b_r.as_mut().poll_next(cx), Poll::Ready(Some(())));
         assert_eq!(b_r.as_mut().poll_next(cx), Poll::Pending);
 
         Poll::Ready(())
@@ -278,11 +278,11 @@ mod tests {
         let mut left = Box::pin(left);
         drop(right);
 
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
 
         Poll::Ready(())
     }
@@ -292,14 +292,14 @@ mod tests {
         let mut left = Box::pin(left);
         let mut right = Box::pin(right);
 
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(())));
 
         Poll::Ready(())
     }
@@ -325,13 +325,13 @@ mod tests {
         let mut left = Box::pin(left);
         let mut right = Box::pin(right);
 
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
         assert_eq!(left.as_mut().poll_next(cx), Poll::Pending);
-        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(right.as_mut().poll_next(cx), Poll::Ready(Some(())));
         assert_eq!(right.as_mut().poll_next(cx), Poll::Pending);
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
-        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(0)));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
+        assert_eq!(left.as_mut().poll_next(cx), Poll::Ready(Some(())));
         assert_eq!(left.as_mut().poll_next(cx), Poll::Pending);
 
         Poll::Ready(())
