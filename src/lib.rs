@@ -365,8 +365,8 @@ mod tests {
         Poll::Ready(())
     }
 
-    async fn pull_10_items(s: impl Stream<Item = ()>) {
-        s.take(10).collect().await
+    async fn pull_items(s: impl Stream<Item = ()>, amt: usize) {
+        s.take(amt).collect().await
     }
 
     mod a_std {
@@ -401,8 +401,18 @@ mod tests {
         async fn wakeup() {
             let (a, b) = super::get_stream();
 
-            let fut_a = async_std::task::spawn(super::pull_10_items(a));
-            let fut_b = async_std::task::spawn(super::pull_10_items(b));
+            let fut_a = async_std::task::spawn(super::pull_items(a, 10));
+            let fut_b = async_std::task::spawn(super::pull_items(b, 10));
+
+            join!(fut_a, fut_b);
+        }
+
+        #[tokio::test]
+        async fn wakeup_after_drop() {
+            let (a, b) = super::get_stream();
+
+            let fut_a = async_std::task::spawn(super::pull_items(a, 10));
+            let fut_b = async_std::task::spawn(super::pull_items(b, 20));
 
             join!(fut_a, fut_b);
         }
@@ -440,8 +450,19 @@ mod tests {
         async fn wakeup() {
             let (a, b) = super::get_stream();
 
-            let fut_a = tokio::spawn(super::pull_10_items(a));
-            let fut_b = tokio::spawn(super::pull_10_items(b));
+            let fut_a = tokio::spawn(super::pull_items(a, 10));
+            let fut_b = tokio::spawn(super::pull_items(b, 10));
+
+            let (a_res, b_res) = join!(fut_a, fut_b);
+            a_res.and(b_res).expect("failed to spawn");
+        }
+
+        #[tokio::test]
+        async fn wakeup_after_drop() {
+            let (a, b) = super::get_stream();
+
+            let fut_a = tokio::spawn(super::pull_items(a, 10));
+            let fut_b = tokio::spawn(super::pull_items(b, 20));
 
             let (a_res, b_res) = join!(fut_a, fut_b);
             a_res.and(b_res).expect("failed to spawn");
