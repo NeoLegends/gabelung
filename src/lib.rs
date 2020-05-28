@@ -25,7 +25,10 @@
 
 #![deny(missing_docs)]
 
-use futures_util::{ready, stream::Stream};
+use futures_util::{
+    ready,
+    stream::{FusedStream, Stream},
+};
 use parking_lot::Mutex;
 use std::{
     pin::Pin,
@@ -190,6 +193,22 @@ where
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.inner.lock().stream.size_hint()
+    }
+}
+
+impl<S> FusedStream for Branch<S, S::Item>
+where
+    S: FusedStream,
+    S::Item: Clone,
+{
+    fn is_terminated(&self) -> bool {
+        let inner = self.inner.lock();
+        let own_state = match self.direction {
+            Direction::Left => &inner.left,
+            Direction::Right => &inner.right,
+        };
+
+        !own_state.has_item() && inner.stream.is_terminated()
     }
 }
 
