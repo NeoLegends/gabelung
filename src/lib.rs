@@ -337,8 +337,12 @@ mod tests {
         Poll::Ready(())
     }
 
+    async fn pull_10_items(s: impl Stream<Item = ()>) {
+        s.take(10).collect().await
+    }
+
     mod a_std {
-        use futures::future;
+        use futures::{future, join};
 
         #[async_std::test]
         async fn branch_multiple() {
@@ -363,11 +367,21 @@ mod tests {
         #[async_std::test]
         async fn waits_for_other() {
             future::poll_fn(super::waits_for_other).await;
+        }
+
+        #[async_std::test]
+        async fn wakeup() {
+            let (a, b) = super::get_stream();
+
+            let fut_a = async_std::task::spawn(super::pull_10_items(a));
+            let fut_b = async_std::task::spawn(super::pull_10_items(b));
+
+            join!(fut_a, fut_b);
         }
     }
 
     mod tk {
-        use futures::future;
+        use futures::{future, join};
 
         #[tokio::test]
         async fn branch_multiple() {
@@ -392,6 +406,17 @@ mod tests {
         #[tokio::test]
         async fn waits_for_other() {
             future::poll_fn(super::waits_for_other).await;
+        }
+
+        #[tokio::test]
+        async fn wakeup() {
+            let (a, b) = super::get_stream();
+
+            let fut_a = tokio::spawn(super::pull_10_items(a));
+            let fut_b = tokio::spawn(super::pull_10_items(b));
+
+            let (a_res, b_res) = join!(fut_a, fut_b);
+            a_res.and(b_res).expect("failed to spawn");
         }
     }
 }
