@@ -192,7 +192,16 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.inner.lock().stream.size_hint()
+        let inner = self.inner.lock();
+        let own_state = match self.direction {
+            Direction::Left => &inner.left,
+            Direction::Right => &inner.right,
+        };
+
+        let (inner_low, inner_high) = inner.stream.size_hint();
+        let adjust_for_self = if own_state.has_item() { 1 } else { 0 };
+
+        (inner_low + adjust_for_self, inner_high.map(|c| c + adjust_for_self))
     }
 }
 
