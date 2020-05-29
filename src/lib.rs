@@ -407,7 +407,7 @@ mod tests {
             join!(fut_a, fut_b);
         }
 
-        #[tokio::test]
+        #[async_std::test]
         async fn wakeup_after_drop() {
             let (a, b) = super::get_stream();
 
