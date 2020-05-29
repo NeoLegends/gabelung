@@ -157,7 +157,7 @@ where
             Direction::Right => (right, left),
         };
 
-        own_branch.ensure_waker(cx);
+        own_branch.ensure_waker(cx.waker());
 
         match own_branch.take_item() {
             Some(it) => {
@@ -225,11 +225,11 @@ where
 impl<S, I> Unpin for Branch<S, I> {}
 
 impl<I> State<I> {
-    pub fn ensure_waker(&mut self, cx: &Context<'_>) {
+    pub fn ensure_waker(&mut self, w: &Waker) {
         match self {
             State::Live(_, waker) => {
                 if waker.is_none() {
-                    *waker = Some(cx.waker().clone());
+                    *waker = Some(w.clone());
                 }
             }
             State::Dropped => unreachable!("poll on dropped branch half"),
