@@ -4,7 +4,7 @@
 
 Branch an asynchronous stream into two, pushing all items to both halves.
 
-The resulting branches will can be polled independently from each other and will
+The resulting branches can be polled independently from each other and will
 receive all items from the underlying stream (which must be `Clone`).
 
 As long as both halves are alive, one half will never outpace the other by more
