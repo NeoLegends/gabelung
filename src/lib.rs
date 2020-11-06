@@ -201,7 +201,10 @@ where
         let (inner_low, inner_high) = inner.stream.size_hint();
         let adjust_for_self = if own_state.has_item() { 1 } else { 0 };
 
-        (inner_low + adjust_for_self, inner_high.map(|c| c + adjust_for_self))
+        (
+            inner_low + adjust_for_self,
+            inner_high.map(|c| c + adjust_for_self),
+        )
     }
 }
 
