@@ -230,11 +230,7 @@ impl<S, I> Unpin for Branch<S, I> {}
 impl<I> State<I> {
     pub fn ensure_waker(&mut self, w: &Waker) {
         match self {
-            State::Live(_, waker) => {
-                if waker.is_none() {
-                    *waker = Some(w.clone());
-                }
-            }
+            State::Live(_, waker) => *waker = Some(w.clone()),
             State::Dropped => unreachable!("poll on dropped branch half"),
         }
     }
